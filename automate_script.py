@@ -93,14 +93,14 @@ class SendRequests:
                         time.sleep(1)
                         # get_connect_button
                         try:
-                            connect_button = self.find_connect_button()
-                            connect_button.click()
+                            self.click_connect_button()
                             self.add_note_and_send(name)
                             self.close_and_switch_tab()
                         except:
                             self.close_and_switch_tab()
                             print('The connect button does not exist on the page.')
                 time.sleep(1)
+                self.write_page()
                 self.next_page()
         except RuntimeError:
             print("there's an error")
@@ -129,14 +129,14 @@ class SendRequests:
         self.close_dialog_box()
         time.sleep(1)
 
-    def find_connect_button(self):
+    def click_connect_button(self):
 
         if self.xpath_from_string(nx.connect_button_on_profile_xpath):
-            return self.find(nx.connect_button_on_profile_xpath)
+            self.find(nx.connect_button_on_profile_xpath).click()
         else:
             self.click(nx.more_button_xpath)
-            time.sleep(1)
-            return self.find(nx.more_button_connect_xpath)
+            time.sleep(0.5)
+            self.find(nx.more_button_connect_xpath).click()
 
     def close_dialog_box(self):
         if self.xpath_from_string(nx.cancel_button_xpath):
@@ -163,7 +163,7 @@ class SendRequests:
         self.find(xpath).click()
 
     def send_keys(self, keys, xpath):
-        self.browser.find_element_by_xpath(xpath).send_keys(keys)
+        self.find(xpath).send_keys(keys)
 
     def find(self, xpath):
         return self.browser.find_element_by_xpath(xpath)
@@ -194,8 +194,17 @@ class SendRequests:
             print("The env vars does not seem to be set please use the console.")
             username = input('Enter linked in user email id')
             password = input('Enter the password.')
-            if self.is_email_valid(email=username):
-                return username, password
+            return username, password
 
-    def is_email_valid(self, email):
-        return True
+    def get_current_page_number(self):
+        return self.xpath_from_string(nx.current_page_number_text)[0]
+
+    def write_page(self):
+        with open('pages_traversed.txt', "w") as f:
+            f.write(self.get_current_page_number())
+
+    def get_page_from_file(self):
+        if os.path.exists('pages_traversed.txt'):
+            with open('pages_traversed.txt', "r") as f:
+                return int(f.read()) + 1
+        return 1
