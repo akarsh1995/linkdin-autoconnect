@@ -6,5 +6,5 @@ if __name__ == '__main__':
     s.login()
     s.search("Machine learning Artificial Intelligence Bangalore")
     s.switch_to_people()
-    s.jump_to(page_no=6)
+    s.jump_to(page_no=22)
     s.send_requests()
