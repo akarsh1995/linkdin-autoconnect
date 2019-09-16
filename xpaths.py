@@ -20,3 +20,4 @@ class NavigationXpaths:
                                 ')="Connect"] '
 
     body_xpath = '//body'
+    current_page_number_text = '//li/span[@aria-current="true"]/text()'
