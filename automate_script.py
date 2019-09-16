@@ -90,7 +90,6 @@ class SendRequests:
                         self.browser.get(link)
                         time.sleep(1)
                         # close chat box
-                        self.click(nx.message_chat_bar_xpath)
                         time.sleep(1)
                         # get_connect_button
                         try:

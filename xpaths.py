@@ -13,7 +13,6 @@ class NavigationXpaths:
 
     search_bar_xpath = '//input[@placeholder="Search"]'
     people_button_xpath = '//span[text()="People"]'
-    message_chat_bar_xpath = '//span[text()="Messaging" and @aria-hidden="true"]'
 
     connect_button_on_profile_xpath = '//span[@class="artdeco-button__text" and text()="Connect"]'
     more_button_xpath = '//span[@class="artdeco-button__text" and text()="More…"]'
