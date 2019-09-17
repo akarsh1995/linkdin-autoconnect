@@ -43,9 +43,8 @@ class SendRequests:
         gap_2s()
 
     def search(self, query):
-        search_bar_element = self.browser.find_element_by_xpath(nx.search_bar_xpath)
-        search_bar_element.send_keys(query)
-        search_bar_element.send_keys(Keys.ENTER)
+        self.send_keys(query, nx.search_bar_xpath)
+        self.send_keys(Keys.ENTER, nx.search_bar_xpath)
         gap_2s()
 
     def switch_to_people(self):
@@ -88,10 +87,7 @@ class SendRequests:
                     else:
                         self.open_new_tab()
                         self.browser.get(link)
-                        time.sleep(1)
-                        # close chat box
-                        time.sleep(1)
-                        # get_connect_button
+                        gap_2s()
                         try:
                             self.click_connect_button()
                             self.add_note_and_send(name)
@@ -144,11 +140,11 @@ class SendRequests:
             time.sleep(0.7)
 
     def page_down(self):
-        self.browser.find_element_by_xpath(nx.body_xpath).send_keys(Keys.PAGE_DOWN)
+        self.send_keys(Keys.PAGE_DOWN, nx.body_xpath)
         time.sleep(0.5)
 
     def page_up(self):
-        self.browser.find_element_by_xpath(nx.body_xpath).send_keys(Keys.PAGE_UP)
+        self.send_keys(Keys.PAGE_UP, nx.body_xpath)
         time.sleep(0.5)
 
     def adjust_window(self, index):
