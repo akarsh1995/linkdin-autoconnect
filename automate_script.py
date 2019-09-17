@@ -80,9 +80,12 @@ class SendRequests:
                         continue
 
                     elif button_text.startswith('Connect'):
-                        self.click(nx.button_click_xpath.format(i + 1))
-                        self.add_note_and_send(name)
-                        time.sleep(1)
+                        try:
+                            self.click(nx.button_click_xpath.format(i + 1))
+                            self.add_note_and_send(name)
+                            time.sleep(1)
+                        except:
+                            continue
 
                     else:
                         self.open_new_tab()
@@ -201,6 +204,8 @@ class SendRequests:
 
     def get_page_from_file(self):
         if os.path.exists('pages_traversed.txt'):
-            with open('pages_traversed.txt', "r") as f:
-                return int(f.read()) + 1
-        return 1
+            try:
+                with open('pages_traversed.txt', "r") as f:
+                    return int(f.read()) + 1
+            except:
+                return 1
