@@ -3,7 +3,7 @@ class NavigationXpaths:
     add_text_xpath = '//textarea[@class="send-invite__custom-message mb3 ember-text-area ember-view"]'
     invite_send_button_xpath = '//*[text()="Send invitation"]'
     cancel_button_xpath = '//button[@aria-label="Dismiss"]'
-
+    profile_div = '//div[@data-test-search-result="PROFILE"]'
     button_text_xpath = '(//div[@data-control-name="srp_profile_actions"]/button)|(//div[' \
                         '@class="search-result__actions"]/div/button)|//li-icon[@type="lock-icon"]/parent::* '
 

@@ -1,7 +1,7 @@
 import os
 import re
 import time
-
+from urllib.parse import urljoin
 from lxml import html
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -23,6 +23,11 @@ def gap_1s():
 
 def gap_2s():
     time.sleep(2)
+
+
+def get_elem_xpath(button_elem):
+    root = button_elem.getroottree()
+    return root.getpath(button_elem)
 
 
 class SendRequests:
@@ -56,24 +61,21 @@ class SendRequests:
         self.page_down()
         gap_1s()
         # get names
-        profile_link_elements = self.xpath_from_string(nx.profile_link_xpath)
-        profile_links = [self.base_url + el.xpath('./a/@href')[0] for el in profile_link_elements]
-        name_texts = [el.xpath('.//span[@class="name actor-name"]/text()')[0] for el in profile_link_elements]
-
-        # get button texts
-        button_elements = self.xpath_from_string(nx.button_text_xpath)
-        button_texts = [el.attrib['aria-label'] if 'aria-label' in el.keys() else '' for el in button_elements]
+        profile_elements = self.xpath_from_string(nx.profile_div)
         self.page_up()
         self.page_up()
-        return profile_links, name_texts, button_texts
+        return [
+            (i+1, urljoin('https://www.linkedin.com', link[0].attrib['href']), name_text[0].text, button[0].attrib['aria-label'][:20], get_elem_xpath(button[0]))
+            for i, (button, name_text, link) in
+            enumerate([(e.xpath('.//button'), e.xpath('.//*[@class="name actor-name"]'), e.xpath('(.//a[1])')) for e in profile_elements])
+            if button and name_text and link
+        ]
 
     def send_requests(self):
         try:
-            for i in range(1, 100):
+            for k in range(1, 100):
 
-                pl, nt, bt = self.get_names_button_texts_links()
-
-                for i, (link, name, button_text) in enumerate(zip(pl, nt, bt)):
+                for i, link, name, button_text, button_xpath in self.get_names_button_texts_links():
                     self.adjust_window(i)
 
                     if button_text.startswith('Invite sent'):
@@ -81,7 +83,7 @@ class SendRequests:
 
                     elif button_text.startswith('Connect'):
                         try:
-                            self.click(nx.button_click_xpath.format(i + 1))
+                            self.click(button_xpath)
                             self.add_note_and_send(name)
                             time.sleep(1)
                         except:
@@ -209,3 +211,12 @@ class SendRequests:
                     return int(f.read()) + 1
             except:
                 return 1
+
+    def get_xpath_of_elem(self):
+        from lxml import etree
+
+        root = html.fromstring(self.browser.page_source)
+
+        tree = etree.ElementTree(root)
+        for e in root.iter():
+            print(tree.getpath(e))
