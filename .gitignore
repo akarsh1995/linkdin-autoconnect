@@ -129,3 +129,4 @@ webdriver
 .DS_Store
 .idea
 feature_addition.txt
+/pages_traversed.txt
