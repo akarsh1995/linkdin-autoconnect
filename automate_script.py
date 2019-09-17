@@ -220,3 +220,11 @@ class SendRequests:
         tree = etree.ElementTree(root)
         for e in root.iter():
             print(tree.getpath(e))
+
+    def only_second_connections(self):
+        gap_1s()
+        self.click(nx.all_filters)
+        gap_1s()
+        self.click(nx.second_connection_checkbox)
+        self.click(nx.second_degree_apply)
+        gap_1s()

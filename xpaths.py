@@ -21,3 +21,6 @@ class NavigationXpaths:
 
     body_xpath = '//body'
     current_page_number_text = '//li/span[@aria-current="true"]/text()'
+    all_filters = '//span[text()="All Filters"]'
+    second_connection_checkbox = '//label[text()="2nd"]'
+    second_degree_apply = '//button[@data-control-name="all_filters_apply"]/span[text()="Apply"]'
