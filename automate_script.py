@@ -212,19 +212,12 @@ class SendRequests:
             except:
                 return 1
 
-    def get_xpath_of_elem(self):
-        from lxml import etree
-
-        root = html.fromstring(self.browser.page_source)
-
-        tree = etree.ElementTree(root)
-        for e in root.iter():
-            print(tree.getpath(e))
-
     def only_second_connections(self):
+        gap_2s()
         gap_1s()
         self.click(nx.all_filters)
         gap_1s()
         self.click(nx.second_connection_checkbox)
         self.click(nx.second_degree_apply)
+        gap_2s()
         gap_1s()
