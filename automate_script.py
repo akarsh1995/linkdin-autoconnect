@@ -34,7 +34,7 @@ class SendRequests:
 
     def __init__(self, note_text):
         self.base_url = 'https://www.linkedin.com'
-        self.browser = webdriver.Chrome('webdriver/chromedriver', chrome_options=chrome_options)
+        self.browser = webdriver.Chrome(chrome_options=chrome_options)
         self.note_text = note_text
 
     def login(self):
