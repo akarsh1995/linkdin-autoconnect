@@ -1,177 +1,66 @@
-import os
-import re
+from pathlib import Path
 import time
-from urllib.parse import urljoin
-from lxml import html
+from time import sleep
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
-from xpaths import NavigationXpaths as nx
+from random import randint
 
-chrome_options = Options()
-chrome_options.add_argument("--kiosk")
-
-
-def gap_half():
-    time.sleep(.5)
-
-
-def gap_1s():
-    time.sleep(1)
+def random_gaps0_5():
+    sleep(randint(0, 5))
 
 
-def gap_2s():
-    time.sleep(2)
+class CustomBrowser:
 
+    def get_options(self):
+        chrome_save_dir = Path(__file__).parent.joinpath('chrome_data').absolute()
+        chrome_save_dir.mkdir(exist_ok=True, parents=True)
+        options = webdriver.ChromeOptions()
+        options.add_argument("--kiosk")
+        print(chrome_save_dir)
+        options.add_argument(r'--user-data-dir={}'.format(chrome_save_dir))
+        return options
 
-def get_elem_xpath(button_elem):
-    root = button_elem.getroottree()
-    return root.getpath(button_elem)
-
-
-class SendRequests:
-
-    def __init__(self, note_text):
+    def __enter__(self, *args, **kwargs):
         self.base_url = 'https://www.linkedin.com'
-        self.browser = webdriver.Chrome(chrome_options=chrome_options)
-        self.note_text = note_text
-
-    def login(self):
+        self.browser = webdriver.Chrome(
+            chrome_options=self.get_options()
+        )
         self.browser.get(self.base_url)
-        username, password = self.get_email_pass()
-        self.browser.get(self.base_url + '/uas/login')
-        self.send_keys(username, '//input[@id="username"]')
-        self.send_keys(password, '//input[@id="password"]')
-        self.click('//button[@type="submit"]')
-        print('Signing in...')
-        gap_2s()
+        sleep(3)
+        return self
 
-    def search(self, query):
-        self.send_keys(query, nx.search_bar_xpath)
-        self.send_keys(Keys.ENTER, nx.search_bar_xpath)
-        gap_2s()
+    def __exit__(self, *args, **kwargs):
+        self.browser.quit()
 
-    def switch_to_people(self):
-        self.click(nx.people_button_xpath)
-        gap_2s()
 
-    def get_names_button_texts_links(self):
-        self.page_down()
-        self.page_down()
-        gap_1s()
-        # get names
-        profile_elements = self.xpath_from_string(nx.profile_div)
-        self.page_up()
-        self.page_up()
-        return [
-            (i+1, urljoin('https://www.linkedin.com', link[0].attrib['href']), name_text[0].text, button[0].attrib['aria-label'][:20], get_elem_xpath(button[0]))
-            for i, (button, name_text, link) in
-            enumerate([(e.xpath('.//button'), e.xpath('.//*[@class="name actor-name"]'), e.xpath('(.//a[1])')) for e in profile_elements])
-            if button and name_text and link
-        ]
+class BaseAction:
+    browser: webdriver.Chrome
 
-    def send_requests(self):
-        try:
-            for k in range(1, 100):
+    xpath_body =  '//body'
 
-                for i, link, name, button_text, button_xpath in self.get_names_button_texts_links():
-                    self.adjust_window(i)
-
-                    if button_text.startswith('Invite sent'):
-                        continue
-
-                    elif button_text.startswith('Connect'):
-                        try:
-                            self.click(button_xpath)
-                            self.add_note_and_send(name)
-                            time.sleep(1)
-                        except:
-                            continue
-
-                    else:
-                        self.open_new_tab()
-                        self.browser.get(link)
-                        gap_2s()
-                        try:
-                            self.click_connect_button()
-                            self.add_note_and_send(name)
-                            self.close_and_switch_tab()
-                        except:
-                            self.close_and_switch_tab()
-                            print('The connect button does not exist on the page.')
-                time.sleep(1)
-                self.write_page()
-                self.next_page()
-        except RuntimeError:
-            print("there's an error")
-        finally:
-            self.close_browser()
-
-    def next_page(self, skip_to=None):
-        self.page_down()
-        self.click(nx.next_button_xpath)
-        time.sleep(4)
-
-    def jump_to(self, page_no):
-        current_url = self.browser.current_url
-        modified_url = re.sub('&page=\d+', '', current_url)
-        modified_url = modified_url + '&page={}'.format(page_no)
-        self.browser.get(modified_url)
-
-    def add_note_and_send(self, name):
-        name = SendRequests.text_decode(name)
-        name = name.split()[0]
-        text = f'Hello {name},\n{self.note_text}'
-
-        self.click(nx.add_note_button_xpath)
-        self.send_keys(text, nx.add_text_xpath)
-        self.click(nx.invite_send_button_xpath)
-        self.close_dialog_box()
-        time.sleep(1)
-
-    def click_connect_button(self):
-
-        if self.xpath_from_string(nx.connect_button_on_profile_xpath):
-            self.find(nx.connect_button_on_profile_xpath).click()
-        else:
-            self.click(nx.more_button_xpath)
+    def page_down(self, times=1):
+        for _ in range(times):
+            self.send_keys(Keys.PAGE_DOWN, self.xpath_body)
             time.sleep(0.5)
-            self.find(nx.more_button_connect_xpath).click()
-
-    def close_dialog_box(self):
-        if self.xpath_from_string(nx.cancel_button_xpath):
-            self.click(nx.cancel_button_xpath)
-            time.sleep(0.7)
-
-    def page_down(self):
-        self.send_keys(Keys.PAGE_DOWN, nx.body_xpath)
-        time.sleep(0.5)
 
     def page_up(self):
-        self.send_keys(Keys.PAGE_UP, nx.body_xpath)
+        self.send_keys(Keys.PAGE_UP, self.xpath_body)
         time.sleep(0.5)
 
     def adjust_window(self, index):
-        self.browser.execute_script('''window.scrollTo(0,{});'''.format(110 * index))
+        self.browser.execute_script(
+            '''window.scrollTo(0,{});'''.format(
+                110 * index
+            )
+        )
         time.sleep(0.5)
 
-    @staticmethod
-    def text_decode(text):
-        return text.encode('ascii', 'replace').decode().replace('?', '').strip()
-
-    def click(self, xpath):
-        self.find(xpath).click()
-
-    def send_keys(self, keys, xpath):
-        self.find(xpath).send_keys(keys)
-
-    def find(self, xpath):
-        return self.browser.find_element_by_xpath(xpath)
-
-    def xpath_from_string(self, xpath):
-        html_page = html.fromstring(self.browser.page_source)
-        return html_page.xpath(xpath)
+    def send_keys(self, xpath, keys):
+        return self.browser.find_element_by_xpath(xpath).send_keys(keys)
 
     def open_new_tab(self):
         self.browser.execute_script('''window.open("","_blank");''')
@@ -183,41 +72,186 @@ class SendRequests:
         self.browser.switch_to.window(self.tabs[0])
         time.sleep(0.5)
 
-    def close_browser(self):
-        self.browser.close()
+    def wait_and_click(self, xpath):
+        self.wait_and_get_elem(xpath).click()
 
-    def get_email_pass(self):
+    def wait_and_send_keys(self, xpath, keys):
+        self.wait_and_get_elem(xpath).send_keys(keys)
+
+    def wait_and_get_elem(self, xpath, duration=10):
+        return WebDriverWait(self.browser, duration).until(
+            EC.element_to_be_clickable(
+                (By.XPATH, xpath)
+            ))
+
+    def wait_and_check_presence(self, xpath, timeout=3):
         try:
-            username = os.environ.get('LINKEDIN_USER')
-            password = os.environ.get('LINKEDIN_PASS')
-            return username, password
+            WebDriverWait(self.browser, timeout).until(
+                EC.visibility_of_element_located((
+                    (By.XPATH, xpath)
+                )))
+            return True
         except:
-            print("The env vars does not seem to be set please use the console.")
-            username = input('Enter linked in user email id')
-            password = input('Enter the password.')
-            return username, password
+            return False
 
-    def get_current_page_number(self):
-        return self.xpath_from_string(nx.current_page_number_text)[0]
+    def action(self):
+        NotImplemented
 
-    def write_page(self):
-        with open('pages_traversed.txt', "w") as f:
-            f.write(self.get_current_page_number())
+    def __call__(self, browser):
+        self.browser = browser
+        return self.action()
 
-    def get_page_from_file(self):
-        if os.path.exists('pages_traversed.txt'):
-            try:
-                with open('pages_traversed.txt', "r") as f:
-                    return int(f.read()) + 1
-            except:
-                return 1
 
-    def only_second_connections(self):
-        gap_2s()
-        gap_1s()
-        self.click(nx.all_filters)
-        gap_1s()
-        self.click(nx.second_connection_checkbox)
-        self.click(nx.second_degree_apply)
-        gap_2s()
-        gap_1s()
+class Login(BaseAction):
+    browser = webdriver.Chrome
+    base_url = 'https://linkedin.com'
+    remmber_me_button = '//button[text()="Remember"]'
+    logged_in_hook = '//span[text()="Who viewed your profile"]'
+
+    def __init__(self, username, password):
+        self.username = username
+        self.password = password
+
+    def is_logged_in(self):
+        return self.wait_and_check_presence(self.logged_in_hook)
+
+    def login(self):
+        self.browser.get(url=self.base_url + '/login')
+        self.wait_and_send_keys('//input[@id="username"]', self.username)
+        self.wait_and_send_keys('//input[@id="password"]', self.password)
+        self.wait_and_click('//button[@type="submit"]')
+        print('Signing in...')
+        random_gaps0_5()
+        self.wait_and_click(self.remmber_me_button)
+
+    def action(self):
+        if self.is_logged_in():
+            return
+        else:
+            self.login()
+
+
+class Search(BaseAction):
+    search_bar_xpath = '//input[@placeholder="Search"]'
+    xpath_see_all_people = '(//*[text()="See all people results"])[1]'
+
+    def __init__(self, query):
+        self.query = query
+
+    def action(self):
+        if self.search_bar_exists:
+            self.wait_and_send_keys(self.search_bar_xpath, self.query)
+            self.wait_and_send_keys(self.search_bar_xpath, Keys.ENTER)
+            self.wait_and_click(self.xpath_see_all_people)
+            sleep(2)
+
+    @property
+    def search_bar_exists(self):
+        return True
+
+class ConnectionDialogHandler(BaseAction):
+    xpath_add_note = '//span[text()="Add a note"]'
+    xpath_message_text_box = '//textarea'
+    xpath_send_button = '//span[text()="Send"]'
+
+    def __init__(self, text_note):
+        self.text_note = text_note
+
+    def action(self):
+        self.wait_and_click(self.xpath_add_note)
+        random_gaps0_5()
+        self.wait_and_send_keys(self.xpath_message_text_box, self._text_note)
+        random_gaps0_5()
+        self.wait_and_click(self.xpath_send_button)
+
+    def __call__(self, browser, name):
+        name = name.encode('ascii', 'replace').decode().replace('?', '').strip()
+        self._text_note = self.text_note.format(name)
+        return super().__call__(browser)
+
+
+class SendRequest(BaseAction):
+
+    def __init__(self, name, link,  button, element_id,
+                 connection_dialogue_handler: ConnectionDialogHandler):
+        self.link = link
+        self.name = name
+        self._button = button
+        self.element_id = element_id
+        self.connection_dialogue_handler = connection_dialogue_handler
+
+    def action(self):
+        self.adjust_window(self.element_id)
+        if self.connect_button_found:
+            self.button.click()
+            self.connection_dialogue_handler(self.browser, self.name)
+
+    @property
+    def button(self):
+        if self.connect_button_found:
+            return self._button['connect']
+        elif self.follow_button_found:
+            return self._button['follow']
+        elif self.message_button_found:
+            return self._button['message']
+
+    @property
+    def connect_button_found(self):
+        return 'connect' in self._button
+
+    @property
+    def follow_button_found(self):
+        return 'follow' in self._button
+
+    @property
+    def message_button_found(self):
+        return 'message' in self._button
+
+
+class ConnectionsIterator(BaseAction):
+    xpath_profile_image = '//img[@width="48"]'
+    xpath_next_button = '//span[text()="Next"]'
+
+    def __init__(self, browser):
+        self.browser = browser
+
+    def __iter__(self):
+        while True:
+            if self.wait_and_check_presence(self.xpath_profile_image):
+                profile_pic_elems = self.browser.find_elements_by_xpath(self.xpath_profile_image)
+                sleep(2)
+                for index, profile_pic_elem in enumerate(profile_pic_elems):
+                    connection_name = profile_pic_elem.get_attribute('alt')
+                    connection_link = profile_pic_elem.find_element_by_xpath(
+                        'ancestor::a'
+                    ).get_attribute('href')
+                    button = profile_pic_elem.find_element_by_xpath(
+                        'ancestor::li//span[text()="Connect" or text()="Follow" or text()="Message" or text()="Pending"]'
+                    )
+                    button_present = {
+                        button.text.lower(): button
+                    }
+                    yield connection_name, connection_link, button_present, index
+                self.adjust_window(12)
+                self.wait_and_click(self.xpath_next_button)
+            else:
+                raise TypeError('Tried to find profile picture elements but element not found.')
+
+
+if __name__ == '__main__':
+    with CustomBrowser() as browser:
+        browser = browser.browser
+        login = Login('akarsh.1995.02@gmail.com', 'Linkedin@4914')
+        login(browser)
+        Search('Artificial Intelligence')(browser)
+        dia_handler = ConnectionDialogHandler('''Hello {}, I'm looking forward to connect with you.''')
+        for name, link, button_elem, elem_id in ConnectionsIterator(browser):
+            print(f'sending  request to name: {name}\nlink: {link}\nbutton: {button_elem}')
+            s = SendRequest(
+                name,
+                link,
+                button_elem,
+                elem_id,
+                dia_handler
+            )
+            s(browser)
