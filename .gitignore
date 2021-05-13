@@ -130,3 +130,4 @@ webdriver
 .idea
 feature_addition.txt
 /pages_traversed.txt
+config.yml

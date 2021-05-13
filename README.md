@@ -12,7 +12,9 @@ Set the message and search field inputs in the main.py file.
 
 To run the script create a python virtual environment and install the requirements using the below command and then run:
 
+* Enter the credentials and rename sample_config.yml to config.yml
+
 ```sh
-pip install -r requirements.txt
-python main.py
+pipenv install
+pipenv run python ./automate_script.py
 ```
