@@ -8,7 +8,7 @@ if __name__ == '__main__':
         data = yaml.load(f, Loader=yaml.FullLoader)
     login = Login(data['email'], data['password'])
     search = Search(data['search_query'])
-    connection_dialog = ConnectionDialogHandler(data['message'])
+    connection_dialog = ConnectionDialogHandler(data['messages'])
     send_request = SendRequest(connection_dialog)
     with CustomBrowser('https://linkedin.com') as browser:
         browser = browser.browser

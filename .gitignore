@@ -131,3 +131,5 @@ webdriver
 feature_addition.txt
 /pages_traversed.txt
 config.yml
+
+/chrome_data

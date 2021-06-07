@@ -2,6 +2,7 @@ from browser import BaseAction
 from selenium import webdriver
 from time import sleep
 from selenium.webdriver.common.keys import Keys
+from random import choice
 
 from random import randint
 
@@ -12,7 +13,7 @@ class Login(BaseAction):
     browser = webdriver.Chrome
     base_url = 'https://linkedin.com'
     remmber_me_button = '//button[text()="Remember"]'
-    logged_in_hook = '//span[text()="Who viewed your profile"]'
+    logged_in_hook = '//span[text()="Start a post"]'
 
     def __init__(self, username, password):
         self.username = username
@@ -60,8 +61,8 @@ class ConnectionDialogHandler(BaseAction):
     xpath_message_text_box = '//textarea'
     xpath_send_button = '//span[text()="Send"]'
 
-    def __init__(self, text_note):
-        self.text_note = text_note
+    def __init__(self, text_notes):
+        self._text_notes = text_notes
 
     def action(self):
         self.wait_and_click(self.xpath_add_note)
@@ -69,6 +70,10 @@ class ConnectionDialogHandler(BaseAction):
         self.wait_and_send_keys(self.xpath_message_text_box, self._text_note)
         random_gaps0_5()
         self.wait_and_click(self.xpath_send_button)
+
+    @property
+    def text_note(self):
+        return choice(self._text_notes)
 
     def __call__(self, browser, name):
         name = name.encode('ascii', 'replace').decode().replace('?', '').strip()
@@ -117,7 +122,7 @@ class SendRequest(BaseAction):
 
 
 class ConnectionsIterator(BaseAction):
-    xpath_profile_image = '//img[@width="48"]'
+    xpath_profile_image = '(//img[@width="48"]|//div[@class="visually-hidden"])'
     xpath_next_button = '//span[text()="Next"]'
 
     def __init__(self, browser):
@@ -129,7 +134,10 @@ class ConnectionsIterator(BaseAction):
                 profile_pic_elems = self.browser.find_elements_by_xpath(self.xpath_profile_image)
                 sleep(2)
                 for index, profile_pic_elem in enumerate(profile_pic_elems):
-                    connection_name = profile_pic_elem.get_attribute('alt')
+                    if profile_pic_elem.tag_name == 'div':
+                        connection_name = profile_pic_elem.text
+                    else:
+                        connection_name = profile_pic_elem.get_attribute('alt')
                     connection_link = profile_pic_elem.find_element_by_xpath(
                         'ancestor::a'
                     ).get_attribute('href')
